@@ -1,5 +1,6 @@
 # custom ignores
 .idea/
+*.gz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

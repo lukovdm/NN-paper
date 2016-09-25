@@ -28,22 +28,23 @@ def conv_layer(input_tensor, filter_shape, strides, padding, layer_name, act=tf.
     """
 
     with tf.name_scope('kernels'):
-        kernels = tf.get_variable(
-            name="Xavier_initializer",
-            shape=filter_shape,
-            initializer=tf.contrib.layers.xavier_initializer_conv2d(),
-            trainable=True
-        )
-        tf.image_summary(layer_name + "/kernels")
+        with tf.variable_scope(layer_name):
+            kernels = tf.get_variable(
+                name="Xavier_initializer",
+                shape=filter_shape,
+                initializer=tf.contrib.layers.xavier_initializer_conv2d(),
+                trainable=True
+            )
+        tf.image_summary(layer_name + "/kernels", kernels)
     with tf.name_scope('biases'):
-        biases = tf.constant(1.0, shape=filter_shape[3])
+        biases = tf.constant(1.0, shape=[filter_shape[3]])
         variable_summaries(biases, layer_name + '/biases')
     with tf.name_scope('convolution'):
         # http://stackoverflow.com/questions/34619177/what-does-tf-nn-conv2d-do-in-tensorflow
         preactivation = tf.nn.conv2d(input_tensor, kernels, strides, padding)
-        tf.image_summary(layer_name + "/preactivations")
+        tf.image_summary(layer_name + "/preactivations", preactivation)
         activation = act(preactivation) + biases
-        tf.image_summary(layer_name + "/activations")
+        tf.image_summary(layer_name + "/activations", activation)
 
     return activation
 
@@ -54,18 +55,27 @@ def nn_layer(input_tensor, input_dim, output_dim, layer_name, act=tf.nn.relu):
     It does a matrix multiply, bias add, and then uses relu to nonlinearize.
     It also sets up name scoping so that the resultant graph is easy to read, and
     adds a number of summary ops.
+
+    :param input_tensor: a tensor of inputs
+    :param input_dim: the dimensionality of the input
+    :param output_dim: the dimensionality of the output
+    :param layer_name: the name of the layer
+    :param initializer: the initializer used to initialize the weights
+    :param act: the activation function. Default is tf.act.relu
+    :return: a tensor of dimensionality output_dim
     """
 
     with tf.name_scope('weights'):
-        weights = tf.get_variable(
-            name="Xavier_initializer",
-            shape=[input_dim, output_dim],
-            initializer=tf.contrib.layers.xavier_initializer(),
-            trainable=True
-        )
+        with tf.variable_scope(layer_name):
+            weights = tf.get_variable(
+                name="Xavier_initializer",
+                shape=[input_dim, output_dim],
+                initializer=tf.contrib.layers.xavier_initializer(),
+                trainable=True
+            )
         variable_summaries(weights, layer_name + '/weights')
     with tf.name_scope('biases'):
-        biases = tf.constant(0.1, shape=output_dim)
+        biases = tf.constant(0.1, shape=[output_dim])
         variable_summaries(biases, layer_name + '/biases')
     with tf.name_scope('Wx_plus_b'):
         preactivate = tf.matmul(input_tensor, weights) + biases

@@ -7,8 +7,9 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 flags.DEFINE_integer("MINI_BATCH_SIZE", 100, "size of the mini-batch")
-flags.DEFINE_integer("TEST_STEPS", 10, "amount of steps before testing")
-flags.DEFINE_string("summaries_dir", "/tmp/NN-summaries")
+flags.DEFINE_integer("TEST_STEPS", 100, "amount of steps before testing")
+flags.DEFINE_string("summaries_dir", "/tmp/NN-summaries", "location of summaries")
+flags.DEFINE_integer("max_steps", 100, "the maximum amount of steps taken")
 
 
 if tf.gfile.Exists(FLAGS.summaries_dir):
@@ -17,20 +18,23 @@ tf.gfile.MakeDirs(FLAGS.summaries_dir)
 
 
 with tf.name_scope('input'):
-    x = tf.placeholder(tf.float32, shape=[None, 28, 28, 1], name="data")
-    tf.image_summary('input', x, 10)
+    x = tf.placeholder(tf.float32, shape=[None, 784], name="data")
+    x_reshaped = tf.reshape(x, [-1, 28, 28, 1])
+    tf.image_summary('input', x_reshaped, max_images=10)
     y_ = tf.placeholder(tf.float32, shape=[None, 10], name="labels")
     keep_prob = tf.placeholder(tf.float32)
 
+    mnist_data_set = mnist.read_data_sets("Data", one_hot=True)
+
 with tf.name_scope("conv1"):
-    conv1 = conv_layer(x, [5, 5, 1, 64], [1, 1, 1, 1], "VALID", "conv1")
+    conv1 = conv_layer(x_reshaped, [5, 5, 1, 64], [1, 1, 1, 1], "VALID", "conv1")
 
 with tf.name_scope("conv2"):
     conv2 = conv_layer(conv1, [5, 5, 64, 128], [1, 1, 1, 1], "VALID", "conv2")
 
 with tf.name_scope("fully_connected"):
-    conv2_reshapen = tf.reshape(conv2, [None, 20 * 20 * 128])
-    fc_1 = nn_layer(conv2_reshapen, 20 * 20 * 80, 1024, "fc_1")
+    conv2_reshaped = tf.reshape(conv2, [-1, 20 * 20 * 128])
+    fc_1 = nn_layer(conv2_reshaped, 20 * 20 * 128, 1024, "fc_1")
     fc_1_dropout = tf.nn.dropout(fc_1, keep_prob)
 
 with tf.name_scope("output_layer"):
@@ -55,10 +59,10 @@ with tf.name_scope("accuracy"):
 def feed_dict(train):
     """Make a TensorFlow feed_dict: maps data onto Tensor placeholders."""
     if train:
-        xs, ys = mnist.train.next_batch(100)
+        xs, ys = mnist_data_set.train.next_batch(100)
         k = FLAGS.dropout
     else:
-        xs, ys = mnist.test.images, mnist.test.labels
+        xs, ys = mnist_data_set.test.images, mnist_data_set.test.labels
         k = 1.0
     return {x: xs, y_: ys, keep_prob: k}
 
