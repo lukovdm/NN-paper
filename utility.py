@@ -35,16 +35,20 @@ def conv_layer(input_tensor, filter_shape, strides, padding, layer_name, act=tf.
                 initializer=tf.contrib.layers.xavier_initializer_conv2d(),
                 trainable=True
             )
-        tf.image_summary(layer_name + "/kernels", kernels)
+        with tf.name_scope('image_summary'):
+            image_kernel = tf.reshape(kernels, [-1, filter_shape[0], filter_shape[1], 1])
+            tf.image_summary(layer_name + "/kernels", image_kernel)
     with tf.name_scope('biases'):
         biases = tf.constant(1.0, shape=[filter_shape[3]])
         variable_summaries(biases, layer_name + '/biases')
     with tf.name_scope('convolution'):
         # http://stackoverflow.com/questions/34619177/what-does-tf-nn-conv2d-do-in-tensorflow
-        preactivation = tf.nn.conv2d(input_tensor, kernels, strides, padding)
-        tf.image_summary(layer_name + "/preactivations", preactivation)
-        activation = act(preactivation) + biases
-        tf.image_summary(layer_name + "/activations", activation)
+        with tf.name_scope('preactivation'):
+            preactivation = tf.nn.conv2d(input_tensor, kernels, strides, padding)
+            tf.image_summary(layer_name + "/preactivations", preactivation)
+        with tf.name_scope('activation'):
+            activation = act(preactivation) + biases
+            tf.image_summary(layer_name + "/activations", activation)
 
     return activation
 

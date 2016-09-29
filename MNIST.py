@@ -6,7 +6,7 @@ from tensorflow.contrib.learn.python.learn.datasets import mnist
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 
-flags.DEFINE_integer("MINI_BATCH_SIZE", 100, "size of the mini-batch")
+flags.DEFINE_integer("MINI_BATCH_SIZE", 16, "size of the mini-batch")
 flags.DEFINE_integer("TEST_STEPS", 100, "amount of steps before testing")
 flags.DEFINE_string("summaries_dir", "/tmp/NN-summaries", "location of summaries")
 flags.DEFINE_integer("max_steps", 100, "the maximum amount of steps taken")
@@ -90,6 +90,7 @@ with tf.Session() as sess:
                 train_writer.add_summary(summary, i)
                 print('Adding run metadata for', i)
             else:  # Record a summary
+                print('ran step ' + str(i))
                 summary, _ = sess.run([merged, train_step], feed_dict=feed_dict(True))
                 train_writer.add_summary(summary, i)
     train_writer.close()
