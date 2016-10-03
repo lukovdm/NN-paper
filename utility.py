@@ -47,7 +47,7 @@ def conv_layer(input_tensor, filter_shape, strides, padding, layer_name, act=tf.
             preactivation = tf.nn.conv2d(input_tensor, kernels, strides, padding)
             tf.image_summary(layer_name + "/preactivations", preactivation)
         with tf.name_scope('activation'):
-            activation = act(preactivation) + biases
+            activation = act(preactivation + biases)
             tf.image_summary(layer_name + "/activations", activation)
 
     return activation
