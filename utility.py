@@ -37,18 +37,18 @@ def conv_layer(input_tensor, filter_shape, strides, padding, layer_name, act=tf.
             )
         with tf.name_scope('image_summary'):
             image_kernel = tf.reshape(kernels, [-1, filter_shape[0], filter_shape[1], 1])
-            tf.image_summary(layer_name + "/kernels", image_kernel)
+            tf.image_summary(layer_name + "/kernels", image_kernel, max_images=1)
     with tf.name_scope('biases'):
-        biases = tf.constant(1.0, shape=[filter_shape[3]])
+        biases = tf.constant(0.1, shape=[filter_shape[3]])
         variable_summaries(biases, layer_name + '/biases')
     with tf.name_scope('convolution'):
         # http://stackoverflow.com/questions/34619177/what-does-tf-nn-conv2d-do-in-tensorflow
         with tf.name_scope('preactivation'):
             preactivation = tf.nn.conv2d(input_tensor, kernels, strides, padding)
-            tf.image_summary(layer_name + "/preactivations", preactivation)
+            # tf.image_summary(layer_name + "/preactivations", preactivation, max_images=10)
         with tf.name_scope('activation'):
-            activation = act(preactivation + biases)
-            tf.image_summary(layer_name + "/activations", activation)
+            activation = act(preactivation + biases, name='activation')
+            # tf.image_summary(layer_name + "/activations", activation, max_images=10)
 
     return activation
 
@@ -84,6 +84,6 @@ def nn_layer(input_tensor, input_dim, output_dim, layer_name, act=tf.nn.relu):
     with tf.name_scope('Wx_plus_b'):
         preactivate = tf.matmul(input_tensor, weights) + biases
         tf.histogram_summary(layer_name + '/pre_activations', preactivate)
-    activations = act(preactivate, 'activation')
+    activations = act(preactivate, name='activation')
     tf.histogram_summary(layer_name + '/activations', activations)
     return activations

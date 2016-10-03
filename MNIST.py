@@ -9,7 +9,8 @@ FLAGS = flags.FLAGS
 flags.DEFINE_integer("MINI_BATCH_SIZE", 16, "size of the mini-batch")
 flags.DEFINE_integer("TEST_STEPS", 100, "amount of steps before testing")
 flags.DEFINE_string("summaries_dir", "/tmp/NN-summaries", "location of summaries")
-flags.DEFINE_integer("max_steps", 100, "the maximum amount of steps taken")
+flags.DEFINE_integer("max_steps", 1000, "the maximum amount of steps taken")
+flags.DEFINE_float("dropout", 0.5, "the dropout")
 
 
 if tf.gfile.Exists(FLAGS.summaries_dir):
@@ -22,19 +23,21 @@ with tf.name_scope('input'):
     x_reshaped = tf.reshape(x, [-1, 28, 28, 1])
     tf.image_summary('input', x_reshaped, max_images=10)
     y_ = tf.placeholder(tf.float32, shape=[None, 10], name="labels")
-    keep_prob = tf.placeholder(tf.float32)
+    keep_prob = tf.placeholder(tf.float32, name="keep_probability")
 
     mnist_data_set = mnist.read_data_sets("Data", one_hot=True)
 
 with tf.name_scope("conv1"):
-    conv1 = conv_layer(x_reshaped, [5, 5, 1, 64], [1, 1, 1, 1], "VALID", "conv1")
+    conv1 = conv_layer(x_reshaped, [5, 5, 1, 128], [1, 1, 1, 1], "VALID", "conv1")
+    pool1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
 
 with tf.name_scope("conv2"):
-    conv2 = conv_layer(conv1, [5, 5, 64, 128], [1, 1, 1, 1], "VALID", "conv2")
+    conv2 = conv_layer(pool1, [3, 3, 128, 256], [1, 1, 1, 1], "VALID", "conv2")
+    # pool2 = tf.nn.max_pool(conv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
 
 with tf.name_scope("fully_connected"):
-    conv2_reshaped = tf.reshape(conv2, [-1, 20 * 20 * 128])
-    fc_1 = nn_layer(conv2_reshaped, 20 * 20 * 128, 1024, "fc_1")
+    conv2_reshaped = tf.reshape(conv2, [-1, 10 * 10 * 256])
+    fc_1 = nn_layer(conv2_reshaped, 10 * 10 * 256, 1024, "fc_1")
     fc_1_dropout = tf.nn.dropout(fc_1, keep_prob)
 
 with tf.name_scope("output_layer"):
@@ -90,8 +93,17 @@ with tf.Session() as sess:
                 train_writer.add_summary(summary, i)
                 print('Adding run metadata for', i)
             else:  # Record a summary
-                print('ran step ' + str(i))
+                print('running step ' + str(i))
                 summary, _ = sess.run([merged, train_step], feed_dict=feed_dict(True))
                 train_writer.add_summary(summary, i)
+
+        test_writer.flush()
+
+    summary, acc = sess.run([merged, accuracy], feed_dict=feed_dict(False))
+    test_writer.add_summary(summary, FLAGS.max_steps+1)
+    print('Accuracy at step %s: %s' % (FLAGS.max_steps+1, acc))
+
+    test_writer.flush()
+
     train_writer.close()
     test_writer.close()
