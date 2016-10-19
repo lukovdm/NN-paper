@@ -6,10 +6,10 @@ from tensorflow.contrib.learn.python.learn.datasets import mnist
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 
-flags.DEFINE_integer("MINI_BATCH_SIZE", 16, "size of the mini-batch")
+flags.DEFINE_integer("MINI_BATCH_SIZE", 64, "size of the mini-batch")
 flags.DEFINE_integer("TEST_STEPS", 100, "amount of steps before testing")
-flags.DEFINE_string("summaries_dir", "/tmp/NN-summaries", "location of summaries")
-flags.DEFINE_integer("max_steps", 1000, "the maximum amount of steps taken")
+flags.DEFINE_string("summaries_dir", "/tmp/NN-graph", "location of summaries")
+flags.DEFINE_integer("max_steps", 5000, "the maximum amount of steps taken")
 flags.DEFINE_float("dropout", 0.5, "the dropout")
 
 
@@ -17,14 +17,13 @@ if tf.gfile.Exists(FLAGS.summaries_dir):
     tf.gfile.DeleteRecursively(FLAGS.summaries_dir)
 tf.gfile.MakeDirs(FLAGS.summaries_dir)
 
+y_ = tf.placeholder(tf.float32, shape=[None, 10], name="labels")
+keep_prob = tf.placeholder(tf.float32, name="keep_probability")
 
 with tf.name_scope('input'):
     x = tf.placeholder(tf.float32, shape=[None, 784], name="data")
     x_reshaped = tf.reshape(x, [-1, 28, 28, 1])
     tf.image_summary('input', x_reshaped, max_images=10)
-    y_ = tf.placeholder(tf.float32, shape=[None, 10], name="labels")
-    keep_prob = tf.placeholder(tf.float32, name="keep_probability")
-
     mnist_data_set = mnist.read_data_sets("Data", one_hot=True)
 
 with tf.name_scope("conv1"):
@@ -32,15 +31,17 @@ with tf.name_scope("conv1"):
     pool1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
 
 with tf.name_scope("conv2"):
-    conv2 = conv_layer(pool1, [3, 3, 128, 256], [1, 1, 1, 1], "VALID", "conv2")
-    # pool2 = tf.nn.max_pool(conv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
+    conv2 = conv_layer(pool1, [5, 5, 128, 256], [1, 1, 1, 1], "VALID", "conv2")
 
-with tf.name_scope("fully_connected"):
-    conv2_reshaped = tf.reshape(conv2, [-1, 10 * 10 * 256])
-    fc_1 = nn_layer(conv2_reshaped, 10 * 10 * 256, 1024, "fc_1")
+with tf.name_scope("conv3"):
+    conv3 = conv_layer(conv2, [3, 3, 256, 256], [1, 1, 1, 1], "VALID", "conv3")
+
+with tf.name_scope("fc_1"):
+    conv3_reshaped = tf.reshape(conv3, [-1, 6 * 6 * 256])
+    fc_1 = nn_layer(conv3_reshaped, 6 * 6 * 256, 1024, "fc_1")
     fc_1_dropout = tf.nn.dropout(fc_1, keep_prob)
 
-with tf.name_scope("output_layer"):
+with tf.name_scope("output"):
     y = nn_layer(fc_1_dropout, 1024, 10, "output", act=tf.nn.softmax)
 
 with tf.name_scope("loss"):
@@ -57,6 +58,9 @@ with tf.name_scope("accuracy"):
     with tf.name_scope('accuracy'):
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     tf.scalar_summary('accuracy', accuracy)
+
+with tf.name_scope("saving"):
+    saver = tf.train.Saver()
 
 
 def feed_dict(train):
@@ -102,6 +106,9 @@ with tf.Session() as sess:
     summary, acc = sess.run([merged, accuracy], feed_dict=feed_dict(False))
     test_writer.add_summary(summary, FLAGS.max_steps+1)
     print('Accuracy at step %s: %s' % (FLAGS.max_steps+1, acc))
+
+    #save_path = saver.save(sess, "MNIS2.ckpt")
+    #print("Model saved to %s" % save_path)
 
     test_writer.flush()
 

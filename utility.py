@@ -37,7 +37,7 @@ def conv_layer(input_tensor, filter_shape, strides, padding, layer_name, act=tf.
             )
         with tf.name_scope('image_summary'):
             image_kernel = tf.reshape(kernels, [-1, filter_shape[0], filter_shape[1], 1])
-            tf.image_summary(layer_name + "/kernels", image_kernel, max_images=1)
+            tf.image_summary(layer_name + "/kernels", image_kernel, max_images=2)
     with tf.name_scope('biases'):
         biases = tf.constant(0.1, shape=[filter_shape[3]])
         variable_summaries(biases, layer_name + '/biases')
@@ -48,7 +48,7 @@ def conv_layer(input_tensor, filter_shape, strides, padding, layer_name, act=tf.
             # tf.image_summary(layer_name + "/preactivations", preactivation, max_images=10)
         with tf.name_scope('activation'):
             activation = act(preactivation + biases, name='activation')
-            # tf.image_summary(layer_name + "/activations", activation, max_images=10)
+            # tf.image_summary(layer_name + "/activations", activation, max_images=2)
 
     return activation
 
