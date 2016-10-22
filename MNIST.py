@@ -102,13 +102,14 @@ with tf.Session() as sess:
                 train_writer.add_summary(summary, i)
 
         test_writer.flush()
+        train_writer.flush()
 
     summary, acc = sess.run([merged, accuracy], feed_dict=feed_dict(False))
     test_writer.add_summary(summary, FLAGS.max_steps+1)
     print('Accuracy at step %s: %s' % (FLAGS.max_steps+1, acc))
 
-    #save_path = saver.save(sess, "MNIS2.ckpt")
-    #print("Model saved to %s" % save_path)
+    save_path = saver.save(sess, "MNIST.ckpt")
+    print("Model saved to %s" % save_path)
 
     test_writer.flush()
 
