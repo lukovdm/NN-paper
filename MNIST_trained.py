@@ -51,7 +51,7 @@ saver = tf.train.Saver()
 
 
 with tf.Session() as sess:
-    saver.restore(sess, "MNIS2.ckpt")
+    saver.restore(sess, "MNIST.ckpt")
     print("model restored")
 
     merged = tf.merge_all_summaries()
